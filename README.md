@@ -5,6 +5,8 @@ It lives in the Control Strip; tapping its icon opens the detail bar.
 
 ![TouchBarStats detail bar: animation, CPU and GPU usage, RAM, CPU and GPU temperatures and Claude usage](docs/screenshot.png)
 
+![TouchBarStats running on a MacBook Pro Touch Bar](docs/photo.jpg)
+
 ## Settings (no recompiling)
 
 ⏲ icon in the menu bar → **Settings…** (or open the app again from Applications).
