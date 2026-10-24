@@ -15,6 +15,7 @@ final class MediaTouchBarItem: NSObject, SettingsObserver {
 
     func settingsDidChange(_ settings: AppSettings) {
         mediaView.width = settings.mediaWidth
-        mediaView.display(settings.media.path.map { URL(fileURLWithPath: $0) }, fit: settings.media.fit)
+        let path = settings.visibleItems.contains(.media) ? settings.media.path : nil
+        mediaView.display(path.map { URL(fileURLWithPath: $0) }, fit: settings.media.fit)
     }
 }

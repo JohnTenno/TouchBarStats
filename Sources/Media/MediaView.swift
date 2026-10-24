@@ -13,6 +13,8 @@ final class MediaView: NSView {
     private var source: MediaSource?
     private var loaded: (url: URL?, fit: MediaFit, width: CGFloat)?
     private var pendingReload: DispatchWorkItem?
+    private var screenObservers: [NSObjectProtocol] = []
+    private var screenAsleep = false
 
     init(size: NSSize, cornerRadius: CGFloat) {
         height = size.height
@@ -23,6 +25,17 @@ final class MediaView: NSView {
         translatesAutoresizingMaskIntoConstraints = false
         widthConstraint = widthAnchor.constraint(equalToConstant: size.width)
         NSLayoutConstraint.activate([widthConstraint, heightAnchor.constraint(equalToConstant: size.height)])
+        let center = NSWorkspace.shared.notificationCenter
+        screenObservers = [
+            center.addObserver(forName: NSWorkspace.screensDidSleepNotification, object: nil, queue: .main) { [weak self] _ in
+                self?.screenAsleep = true
+                self?.source?.stop()
+            },
+            center.addObserver(forName: NSWorkspace.screensDidWakeNotification, object: nil, queue: .main) { [weak self] _ in
+                self?.screenAsleep = false
+                self?.startPlayback()
+            },
+        ]
     }
 
     required init?(coder: NSCoder) {
@@ -30,6 +43,7 @@ final class MediaView: NSView {
     }
 
     deinit {
+        screenObservers.forEach { NSWorkspace.shared.notificationCenter.removeObserver($0) }
         pendingReload?.cancel()
         source?.stop()
     }
@@ -41,9 +55,10 @@ final class MediaView: NSView {
 
     func display(_ url: URL?, fit: MediaFit) {
         layer?.contentsGravity = fit == .fill ? .resizeAspectFill : .resizeAspect
+        pendingReload?.cancel()
+        pendingReload = nil
         guard let loaded else { return reload(url, fit: fit) }
         guard loaded.url != url || loaded.fit != fit || loaded.width != width else { return }
-        pendingReload?.cancel()
         // Only a width change is debounced; meanwhile the layer stretches the current frame.
         guard loaded.url == url, loaded.fit == fit else { return reload(url, fit: fit) }
         let work = DispatchWorkItem { [weak self] in self?.reload(url, fit: fit) }
@@ -59,6 +74,11 @@ final class MediaView: NSView {
         if urlChanged { layer?.contents = nil }
         let targetSize = CGSize(width: width * Self.pixelScale, height: height * Self.pixelScale)
         source = url.flatMap { MediaSourceFactory.make(for: $0, targetSize: targetSize, fit: fit) }
+        startPlayback()
+    }
+
+    private func startPlayback() {
+        guard !screenAsleep else { return }
         source?.start { [weak self] image in self?.layer?.contents = image }
     }
 }

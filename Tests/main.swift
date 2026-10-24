@@ -89,4 +89,27 @@ t.check(small.outputSize == CGSize(width: 100, height: 5) && small.drawRect.widt
 let tiny = FrameGeometry(imageSize: CGSize(width: 64, height: 64), targetSize: CGSize(width: 128, height: 128), fit: .fit)
 t.check(tiny.outputSize == CGSize(width: 64, height: 64), "fit never upscales")
 
+// Starting twice must not leave an untracked polling timer behind.
+final class CountingObserver: SnapshotObserver {
+    var count = 0
+    func monitorDidCapture(_ snapshot: SystemSnapshot) { count += 1 }
+}
+let observer = CountingObserver()
+let monitor = SystemMonitor(cpuReader: CPUUsageReader(), gpuReader: GPUUsageReader(),
+                            memoryReader: MemoryUsageReader(), temperatureReader: TemperatureReader(source: nil),
+                            fanReader: FanSpeedReader(smc: nil), interval: 0.02)
+monitor.add(observer)
+monitor.start()
+monitor.start()
+t.check(observer.count == 1, "starting a running monitor does not sample twice")
+RunLoop.main.run(until: Date().addingTimeInterval(0.08))
+t.check(observer.count > 1, "monitor samples periodically")
+monitor.stop()
+let stoppedCount = observer.count
+RunLoop.main.run(until: Date().addingTimeInterval(0.08))
+t.check(observer.count == stoppedCount, "stop removes all polling after repeated start")
+monitor.start()
+t.check(observer.count == stoppedCount + 1, "monitor resumes with a fresh sample")
+monitor.stop()
+
 t.finish()

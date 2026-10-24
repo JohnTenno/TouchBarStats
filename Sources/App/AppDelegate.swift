@@ -7,6 +7,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, SettingsObserver {
     private let claudeMonitor: ClaudeUsageMonitor
     private let coordinator: TouchBarCoordinator
     private let settingsWindow: SettingsWindowController
+    private var screenObservers: [NSObjectProtocol] = []
 
     init(monitor: SystemMonitor, claudeMonitor: ClaudeUsageMonitor, coordinator: TouchBarCoordinator,
          settingsWindow: SettingsWindowController) {
@@ -20,9 +21,20 @@ final class AppDelegate: NSObject, NSApplicationDelegate, SettingsObserver {
         coordinator.install()
         monitor.start()
         claudeMonitor.start()
+        let center = NSWorkspace.shared.notificationCenter
+        screenObservers = [
+            center.addObserver(forName: NSWorkspace.screensDidSleepNotification, object: nil, queue: .main) { [weak self] _ in
+                self?.monitor.stop()
+            },
+            center.addObserver(forName: NSWorkspace.screensDidWakeNotification, object: nil, queue: .main) { [weak self] _ in
+                self?.monitor.start()
+            },
+        ]
     }
 
     func applicationWillTerminate(_ notification: Notification) {
+        screenObservers.forEach { NSWorkspace.shared.notificationCenter.removeObserver($0) }
+        screenObservers.removeAll()
         monitor.stop()
         claudeMonitor.stop()
     }

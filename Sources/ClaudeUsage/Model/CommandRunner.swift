@@ -1,4 +1,5 @@
 import Foundation
+@preconcurrency import Dispatch
 
 /// Runs a command-line tool without blocking the main thread and captures its output.
 enum CommandRunner {
@@ -23,20 +24,19 @@ enum CommandRunner {
         process.standardError = FileHandle.nullDevice
         process.standardInput = FileHandle.nullDevice
 
-        return try await withCheckedThrowingContinuation { continuation in
-            process.terminationHandler = { finished in
+        try process.run()
+        let timeoutWork = DispatchWorkItem {
+            if process.isRunning { process.terminate() }
+        }
+        DispatchQueue.global().asyncAfter(deadline: .now() + timeout, execute: timeoutWork)
+        return await withCheckedContinuation { continuation in
+            DispatchQueue.global(qos: .utility).async {
+                // Drain while the child runs: waiting for termination first deadlocks
+                // when stdout fills the pipe (for example, verbose CLI output).
                 let data = stdout.fileHandleForReading.readDataToEndOfFile()
-                continuation.resume(returning: Result(status: finished.terminationStatus, output: data))
-            }
-            do {
-                try process.run()
-            } catch {
-                process.terminationHandler = nil
-                continuation.resume(throwing: error)
-                return
-            }
-            DispatchQueue.global().asyncAfter(deadline: .now() + timeout) {
-                if process.isRunning { process.terminate() }
+                process.waitUntilExit()
+                timeoutWork.cancel()
+                continuation.resume(returning: Result(status: process.terminationStatus, output: data))
             }
         }
     }

@@ -9,6 +9,7 @@ final class ClaudeUsageMonitor {
     private var observers: [ClaudeUsageObserver] = []
     private var timers: [Timer] = []
     private var loading = false
+    private var wakeObserver: NSObjectProtocol?
 
     init(client: ClaudeUsageClient, fetchInterval: TimeInterval = 300) {
         self.client = client
@@ -19,13 +20,17 @@ final class ClaudeUsageMonitor {
         observers.append(observer)
     }
 
+    deinit { stop() }
+
     func start() {
+        guard timers.isEmpty else { return }
         refresh()
         timers = [
             Timer.scheduledTimer(withTimeInterval: fetchInterval, repeats: true) { [weak self] _ in self?.refresh() },
             Timer.scheduledTimer(withTimeInterval: 60, repeats: true) { [weak self] _ in self?.publish() },
         ]
-        NSWorkspace.shared.notificationCenter.addObserver(
+        timers.forEach { $0.tolerance = min($0.timeInterval * 0.1, 10) }
+        wakeObserver = NSWorkspace.shared.notificationCenter.addObserver(
             forName: NSWorkspace.didWakeNotification, object: nil, queue: .main
         ) { [weak self] _ in self?.refresh() }
     }
@@ -33,6 +38,8 @@ final class ClaudeUsageMonitor {
     func stop() {
         timers.forEach { $0.invalidate() }
         timers = []
+        if let wakeObserver { NSWorkspace.shared.notificationCenter.removeObserver(wakeObserver) }
+        wakeObserver = nil
     }
 
     func refresh() {

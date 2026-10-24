@@ -25,8 +25,10 @@ final class MetricBadgeView: NSStackView {
         if icon.image == nil {
             icon.image = NSImage(systemSymbolName: metric.symbolName, accessibilityDescription: metric.title)
         }
-        icon.contentTintColor = metric.level.color
-        label.stringValue = showsDetail ? metric.detailValue : metric.shortValue
-        label.textColor = metric.level.color
+        let color = metric.level.color
+        let text = showsDetail ? metric.detailValue : metric.shortValue
+        if icon.contentTintColor != color { icon.contentTintColor = color }
+        if label.stringValue != text { label.stringValue = text }
+        if label.textColor != color { label.textColor = color }
     }
 }

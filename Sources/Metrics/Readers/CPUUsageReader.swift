@@ -9,6 +9,8 @@ final class CPUUsageReader {
         previous = currentTicks()
     }
 
+    deinit { mach_port_deallocate(mach_task_self_, host) }
+
     func read() -> Double? {
         guard let current = currentTicks() else { return nil }
         defer { previous = current }

@@ -5,6 +5,8 @@ final class MemoryUsageReader {
     private let host = mach_host_self()
     private let totalBytes = ProcessInfo.processInfo.physicalMemory
 
+    deinit { mach_port_deallocate(mach_task_self_, host) }
+
     func read() -> MemoryUsage? {
         var stats = vm_statistics64()
         var count = mach_msg_type_number_t(MemoryLayout<vm_statistics64>.stride / MemoryLayout<integer_t>.stride)

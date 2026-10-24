@@ -25,11 +25,15 @@ final class SystemMonitor {
         observers.append(observer)
     }
 
+    deinit { timer?.invalidate() }
+
     func start() {
+        guard timer == nil else { return }
         capture()
         timer = Timer.scheduledTimer(withTimeInterval: interval, repeats: true) { [weak self] _ in
             self?.capture()
         }
+        timer?.tolerance = min(interval * 0.1, 0.1)
     }
 
     func stop() {

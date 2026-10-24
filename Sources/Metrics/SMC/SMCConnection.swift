@@ -9,6 +9,7 @@ final class SMCConnection {
     private static let floatType = fourCharCode("flt ")
 
     private var connection: io_connect_t = 0
+    private var keyInfoCache: [String: SMCKeyData.KeyInfo] = [:]
 
     init?() {
         let service = IOServiceGetMatchingService(kIOMainPortDefault, IOServiceMatching("AppleSMC"))
@@ -51,10 +52,12 @@ final class SMCConnection {
     }
 
     private func keyInfo(_ key: String) -> SMCKeyData.KeyInfo? {
+        if let cached = keyInfoCache[key] { return cached }
         var request = SMCKeyData()
         request.key = Self.fourCharCode(key)
         request.command = Self.readKeyInfoCommand
         guard let info = call(&request)?.keyInfo, info.dataSize > 0, info.dataSize <= 32 else { return nil }
+        keyInfoCache[key] = info
         return info
     }
 
