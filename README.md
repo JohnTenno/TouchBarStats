@@ -3,6 +3,8 @@
 Touch Bar app (MacBook Pro M1) showing CPU, GPU, RAM, temperatures, fan speed and Claude usage.
 It lives in the Control Strip; tapping its icon opens the detail bar.
 
+![TouchBarStats detail bar: animation, CPU and GPU usage, RAM, CPU and GPU temperatures and Claude usage](docs/screenshot.png)
+
 ## Settings (no recompiling)
 
 ⏲ icon in the menu bar → **Settings…** (or open the app again from Applications).
