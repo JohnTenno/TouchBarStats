@@ -34,6 +34,14 @@ Chosen files are copied to `.../TouchBarStats/Media/`, so the original can be mo
 | `Tools/FanBoost` | Manual test: fan at maximum for 10 s (`run.sh`) |
 | `Tests` | Logic tests without XCTest |
 
+## Resource usage
+
+Measured on a MacBook Pro M1 (8 GB, macOS 27) on battery, with an animated GIF in the Control Strip and in the bar:
+
+- **CPU:** ~3–5 % (sampling every 1 s and drawing the GIF frames).
+- **RAM:** ~80 MB after launch; GIF frames are decoded once at display size. After 13 days of uptime it was seen at ~200 MB.
+- **Battery:** quitting it made no measurable difference to the Mac's total draw (below the ~0.5 W noise of the battery sensor).
+
 ## Scripts
 
 Requires only the Xcode Command Line Tools (`swiftc`), no Xcode.
