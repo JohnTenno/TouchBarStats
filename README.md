@@ -53,4 +53,5 @@ Requires only the Xcode Command Line Tools (`swiftc`), no Xcode.
 ## Notes
 
 - Uses private Touch Bar APIs (the same ones MTMR and Pock use), so it cannot ship on the App Store.
+- Claude usage refreshes every minute, on wake, and when opening its detail bar. Requests bypass the cache, time out and recover automatically; stale percentages show an orange `!` and “Sin actualizar”.
 - Claude usage reads Claude Code's own OAuth credentials (read-only) and only lets the `claude` CLI renew its token.

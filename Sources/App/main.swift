@@ -14,7 +14,7 @@ let monitor = SystemMonitor(cpuReader: CPUUsageReader(),
                             interval: settingsStore.settings.refreshInterval)
 let fanControl = FanControlItem(client: FanControlClient(), formatter: formatter)
 let claudeMonitor = ClaudeUsageMonitor(client: ClaudeUsageClient())
-let claudeUsage = ClaudeUsageItem { claudeMonitor.refresh() }
+let claudeUsage = ClaudeUsageItem { claudeMonitor.refresh(replacingCurrent: true) }
 claudeMonitor.add(claudeUsage)
 
 let media = MediaTouchBarItem()

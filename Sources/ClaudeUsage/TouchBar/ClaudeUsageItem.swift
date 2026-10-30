@@ -36,6 +36,7 @@ final class ClaudeUsageItem: NSObject, ClaudeUsageObserver {
 
     func claudeUsageDidChange(_ state: ClaudeUsageState) {
         let now = Date()
+        let stale = state.isStale(at: now)
         let weekly = state.usage?.weekly
         let session = state.usage?.session
         let weeklyRemaining = weekly?.remainingPercent(at: now)
@@ -44,11 +45,14 @@ final class ClaudeUsageItem: NSObject, ClaudeUsageObserver {
         ring.sessionRemaining = sessionRemaining
 
         if let weekly, let weeklyRemaining {
-            let color = RemainingLevel(remainingPercent: weeklyRemaining).color
-            badge.show(Self.percent(weeklyRemaining), color: color)
+            let color = stale ? NSColor.systemOrange : RemainingLevel(remainingPercent: weeklyRemaining).color
+            badge.show(Self.percent(weeklyRemaining) + (stale ? "!" : ""), color: color)
             let text = NSMutableAttributedString(attributedString: Self.text(
                 "Semana \(Self.percent(weeklyRemaining))", size: 15, weight: .semibold, color: color))
             text.append(Self.text("  ↻ \(DurationText.until(weekly.resetsAt, now: now))", size: 13, weight: .regular, color: .labelColor))
+            if stale {
+                text.append(Self.text("  • Sin actualizar", size: 13, weight: .regular, color: .systemOrange))
+            }
             weeklyLabel.attributedStringValue = text
         } else {
             badge.show("!", color: .systemRed)
@@ -67,6 +71,7 @@ final class ClaudeUsageItem: NSObject, ClaudeUsageObserver {
     }
 
     private func open() {
+        onRefresh()
         delegate?.claudeUsageDidRequestOpen(self)
     }
 

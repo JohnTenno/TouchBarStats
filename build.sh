@@ -3,7 +3,9 @@
 set -euo pipefail
 cd "$(dirname "$0")"
 
-APP=build/TouchBarStats.app
+APP=build/Apps.noindex/TouchBarStats.app
+# Keep only the installed app, so launcher searches do not offer build copies.
+trap 'rm -rf "$APP"' EXIT
 rm -rf "$APP"
 mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
 cp Resources/Info.plist "$APP/Contents/Info.plist"

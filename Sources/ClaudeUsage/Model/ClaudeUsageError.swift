@@ -17,6 +17,8 @@ enum ClaudeUsageError: Error {
     }
 
     static func describe(_ error: Error) -> String {
-        (error as? ClaudeUsageError)?.message ?? "Offline"
+        if error is CommandRunner.Failure { return "Request timed out" }
+        if (error as? URLError)?.code == .timedOut { return "Request timed out" }
+        return (error as? ClaudeUsageError)?.message ?? "Offline"
     }
 }

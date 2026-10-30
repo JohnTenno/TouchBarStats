@@ -2,7 +2,7 @@ import Foundation
 
 /// Lets the Claude CLI renew its own token with a minimal prompt.
 /// Never refreshes OAuth by itself; it only runs the CLI, at most once every 10 minutes.
-final class ClaudeTokenRenewer {
+actor ClaudeTokenRenewer {
     private let minimumInterval: TimeInterval = 600
     private var lastAttempt: Date?
 
@@ -15,12 +15,18 @@ final class ClaudeTokenRenewer {
 
     /// Returns true if the CLI actually ran, so the credentials are read again.
     func renewIfAllowed(now: Date = Date()) async -> Bool {
+        guard !Task.isCancelled else { return false }
         if let lastAttempt, now.timeIntervalSince(lastAttempt) < minimumInterval { return false }
         guard let cli = locateCLI() else { return false }
         lastAttempt = now
         let result = try? await CommandRunner.run(cli, arguments: arguments,
                                                   directory: FileManager.default.temporaryDirectory)
-        return result != nil
+        if Task.isCancelled {
+            // A cancelled UI request must not prevent a later renewal for ten minutes.
+            if lastAttempt == now { lastAttempt = nil }
+            return false
+        }
+        return result?.status == 0
     }
 
     private func locateCLI() -> URL? {
